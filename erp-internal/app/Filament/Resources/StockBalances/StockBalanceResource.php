@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Filament\Resources\StockBalances;
+
+use App\Enums\UserRole;
+use App\Filament\Resources\StockBalances\Pages\ListStockBalances;
+use App\Filament\Resources\StockBalances\Tables\StockBalancesTable;
+use App\Models\StockBalance;
+use App\Models\User;
+use BackedEnum;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Table;
+
+class StockBalanceResource extends Resource
+{
+    protected static ?string $model = StockBalance::class;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    protected static \UnitEnum|string|null $navigationGroup = 'Inventory';
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema;
+    }
+
+    public static function table(Table $table): Table
+    {
+        return StockBalancesTable::configure($table);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            //
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => ListStockBalances::route('/'),
+        ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = Auth::user();
+
+        if (! $user instanceof User) {
+            return $query;
+        }
+
+        if ($user->hasAnyRole([
+            UserRole::Owner->value,
+            UserRole::HeadLogistics->value,
+            UserRole::LogisticsAdmin->value,
+            UserRole::Finance->value,
+        ])) {
+            return $query;
+        }
+
+        if ($user->hasRole(UserRole::Branch->value) && $user->branch_id) {
+            return $query->where('branch_id', $user->branch_id);
+        }
+
+        return $query;
+    }
+}
