@@ -34,6 +34,12 @@ class BranchRequestService
 
     public function submit(BranchRequest $request, User $actor): BranchRequest
     {
+        $this->assertCanTransition($request, [BranchRequestStatus::Draft], 'submit');
+
+        if ($actor->isBranchLike() && $actor->branch_id !== $request->branch_id) {
+            throw new \RuntimeException('User cabang hanya boleh submit request cabangnya sendiri.');
+        }
+
         if ($request->items()->count() === 0) {
             throw new \RuntimeException('Tambahkan minimal 1 item request sebelum submit.');
         }
@@ -69,11 +75,17 @@ class BranchRequestService
 
     public function review(BranchRequest $request, User $actor): BranchRequest
     {
+        $this->assertWarehouseActor($actor, 'review');
+        $this->assertCanTransition($request, [BranchRequestStatus::Submitted], 'review');
+
         return $this->updateStatus($request, BranchRequestStatus::Reviewed, $actor, ['reviewed_by' => $actor->id, 'reviewed_at' => now()], 'Gudang review request cabang');
     }
 
     public function approve(BranchRequest $request, User $actor): BranchRequest
     {
+        $this->assertWarehouseActor($actor, 'approve');
+        $this->assertCanTransition($request, [BranchRequestStatus::Submitted, BranchRequestStatus::Reviewed], 'approve');
+
         return DB::transaction(function () use ($request, $actor): BranchRequest {
             foreach ($request->items as $item) {
                 if ((float) $item->approved_qty <= 0) {
@@ -104,6 +116,9 @@ class BranchRequestService
 
     public function reject(BranchRequest $request, User $actor, ?string $note = null): BranchRequest
     {
+        $this->assertWarehouseActor($actor, 'reject');
+        $this->assertCanTransition($request, [BranchRequestStatus::Submitted, BranchRequestStatus::Reviewed], 'reject');
+
         $updated = $this->updateStatus(
             $request,
             BranchRequestStatus::Rejected,
@@ -122,12 +137,25 @@ class BranchRequestService
 
     public function markPacked(BranchRequest $request, User $actor): BranchRequest
     {
+        $this->assertWarehouseActor($actor, 'packing');
+        $this->assertCanTransition($request, [BranchRequestStatus::Approved, BranchRequestStatus::Reviewed], 'packing');
+
         return DB::transaction(function () use ($request, $actor): BranchRequest {
             foreach ($request->items as $item) {
-                $packed = max((float) $item->packed_qty, (float) $item->approved_qty);
+                $approved = (float) $item->approved_qty;
+                $packed = (float) $item->packed_qty;
+
+                if ($packed <= 0) {
+                    $packed = $approved;
+                }
+
+                $status = $packed >= $approved
+                    ? BranchRequestItemStatus::Packed
+                    : BranchRequestItemStatus::Partial;
+
                 $item->update([
                     'packed_qty' => $packed,
-                    'item_status' => BranchRequestItemStatus::Packed->value,
+                    'item_status' => $status->value,
                 ]);
             }
 
@@ -137,12 +165,26 @@ class BranchRequestService
 
     public function markShipped(BranchRequest $request, User $actor): BranchRequest
     {
+        $this->assertWarehouseActor($actor, 'pengiriman');
+        $this->assertCanTransition($request, [BranchRequestStatus::Approved, BranchRequestStatus::Packed], 'pengiriman');
+
         return DB::transaction(function () use ($request, $actor): BranchRequest {
             foreach ($request->items as $item) {
-                $shipped = max((float) $item->shipped_qty, (float) $item->packed_qty, (float) $item->approved_qty);
+                $approved = (float) $item->approved_qty;
+                $packed = max((float) $item->packed_qty, 0);
+                $shipped = (float) $item->shipped_qty;
+
+                if ($shipped <= 0) {
+                    $shipped = $packed > 0 ? $packed : $approved;
+                }
+
+                $status = $shipped >= $approved
+                    ? BranchRequestItemStatus::Shipped
+                    : BranchRequestItemStatus::Partial;
+
                 $item->update([
                     'shipped_qty' => $shipped,
-                    'item_status' => BranchRequestItemStatus::Shipped->value,
+                    'item_status' => $status->value,
                 ]);
             }
 
@@ -163,12 +205,31 @@ class BranchRequestService
 
     public function markReceived(BranchRequest $request, User $actor): BranchRequest
     {
+        $this->assertCanTransition($request, [BranchRequestStatus::Shipped], 'penerimaan');
+
+        if (! $actor->isAdminLike() && ! $actor->isWarehouseLike()) {
+            if (! $actor->isBranchLike() || $actor->branch_id !== $request->branch_id) {
+                throw new \RuntimeException('User cabang hanya boleh menerima request untuk cabangnya sendiri.');
+            }
+        }
+
         return DB::transaction(function () use ($request, $actor): BranchRequest {
             foreach ($request->items as $item) {
-                $received = max((float) $item->received_qty, (float) $item->shipped_qty);
+                $approved = (float) $item->approved_qty;
+                $shipped = max((float) $item->shipped_qty, 0);
+                $received = (float) $item->received_qty;
+
+                if ($received <= 0) {
+                    $received = $shipped;
+                }
+
+                $status = $received >= $approved
+                    ? BranchRequestItemStatus::Received
+                    : BranchRequestItemStatus::Partial;
+
                 $item->update([
                     'received_qty' => $received,
-                    'item_status' => BranchRequestItemStatus::Received->value,
+                    'item_status' => $status->value,
                 ]);
             }
 
@@ -226,6 +287,33 @@ class BranchRequestService
         }
 
         return sprintf('%s-%04d', $prefix, $next);
+    }
+
+    /**
+     * @param  array<int, BranchRequestStatus>  $allowed
+     */
+    protected function assertCanTransition(BranchRequest $request, array $allowed, string $action): void
+    {
+        $allowedValues = array_map(static fn (BranchRequestStatus $status): string => $status->value, $allowed);
+
+        if (in_array($request->status, $allowedValues, true)) {
+            return;
+        }
+
+        throw new \RuntimeException(sprintf(
+            'Aksi %s tidak valid untuk status %s.',
+            $action,
+            $request->status,
+        ));
+    }
+
+    protected function assertWarehouseActor(User $actor, string $action): void
+    {
+        if ($actor->isAdminLike() || $actor->isWarehouseLike()) {
+            return;
+        }
+
+        throw new \RuntimeException('Role user tidak memiliki izin untuk aksi '.$action.'.');
     }
 
     protected function notifyWarehouse(string $message, BranchRequest $request): void

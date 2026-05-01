@@ -7,7 +7,7 @@ ERP internal berbasis Laravel + Filament untuk alur logistik, produksi, transfer
 - PHP `^8.2`
 - Laravel `^12`
 - Filament `^5.5`
-- PostgreSQL
+- PostgreSQL / MySQL
 - Spatie Laravel Permission
 
 ## Scope Modul
@@ -47,11 +47,20 @@ Keputusan bisnis yang sudah diterapkan:
 
 Role yang tersedia:
 
+- `admin`
+- `gudang`
+- `cabang`
 - `owner`
 - `finance`
 - `head_logistics`
 - `logistics_admin`
 - `branch`
+
+Catatan kompatibilitas role:
+
+- `admin` diperlakukan setara akses owner-level
+- `gudang` diperlakukan setara akses warehouse-level (`head_logistics` + `logistics_admin`)
+- `cabang` diperlakukan setara akses branch-level
 
 Panduan operasional per role (login sampai flow fitur):
 
@@ -65,6 +74,9 @@ Dummy user hasil seeder (`password` untuk semua):
 - `adminlogistik@erp.local`
 - `cabang.jakarta@erp.local`
 - `cabang.bekasi@erp.local`
+- `admin@erp.local`
+- `gudang@erp.local`
+- `cabang@erp.local`
 
 Login panel mendukung `email` atau `username`.
 
@@ -260,4 +272,19 @@ php artisan filament:about
 php artisan test
 ```
 
-Jika command database gagal, cek kredensial PostgreSQL di `.env`.
+Jika command database gagal, cek kredensial database di `.env` (PostgreSQL/MySQL).
+
+## Deploy Windows Client
+
+Panduan deploy cepat untuk komputer client Windows (tanpa VPS):
+
+- `docs/DEPLOY_WINDOWS_CLIENT.md`
+- `docs/WINDOWS_NO_DOMAIN_QUICK_START.md` (tanpa domain, pakai quick tunnel)
+
+Script bantu:
+
+- `scripts/windows/setup-production.ps1`
+- `scripts/windows/register-laravel-tasks.ps1`
+- `scripts/windows/cloudflared/config.example.yml`
+- `scripts/windows/start-quick-tunnel.ps1` (akses publik tanpa domain)
+- `scripts/windows/register-quick-tunnel-task.ps1` (auto-start quick tunnel saat boot)

@@ -2,6 +2,9 @@
 
 Dokumen ini menjelaskan alur kerja dari login sampai akses fitur untuk semua role:
 
+- `admin`
+- `gudang`
+- `cabang`
 - `owner`
 - `finance`
 - `head_logistics`
@@ -22,10 +25,16 @@ Dummy user seeder (password semua akun: `password`):
 - `adminlogistik@erp.local`
 - `cabang.jakarta@erp.local`
 - `cabang.bekasi@erp.local`
+- `admin@erp.local`
+- `gudang@erp.local`
+- `cabang@erp.local`
 
 ## 2) Aturan Akses Umum (Role Matrix Ringkas)
 
 - `owner`: akses penuh semua modul dan aksi.
+- `admin`: akses penuh setara owner untuk operasional harian.
+- `gudang`: akses operasional gudang setara kombinasi head logistics + logistics admin.
+- `cabang`: akses operasional cabang setara role branch.
 - `finance`: fokus data keuangan + monitoring data operasional terkait.
 - `head_logistics`: monitoring + approval alur logistik/produksi/transfer.
 - `logistics_admin`: input dan eksekusi operasional harian.
@@ -36,6 +45,12 @@ Catatan:
 - Semua list page mendukung export Excel.
 - Tombol import muncul jika role punya izin `create` pada model terkait.
 - Role `branch` hanya boleh import transaksi cabang (`BranchSale`, `StockMovement`, `Transfer`).
+- Role `cabang` mengikuti aturan role `branch`.
+
+Workflow logistik request cabang:
+
+- `draft -> submit -> reviewed -> approved -> packed -> shipped -> received`
+- Aksi dijaga policy + validasi service sehingga status tidak bisa loncat.
 
 ## 3) SOP Harian Per Role
 
