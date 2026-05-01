@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Enums\UserRole;
 use App\Models\Item;
+use App\Models\StockBalance;
 use App\Models\User;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -15,7 +16,7 @@ class LowStockItemsTable extends TableWidget
 {
     protected static ?string $heading = 'Stok Menipis';
 
-    protected static bool $isLazy = false;
+    protected static bool $isLazy = true;
 
     public static function canView(): bool
     {
@@ -33,14 +34,18 @@ class LowStockItemsTable extends TableWidget
     public function table(Table $table): Table
     {
         $user = Auth::user();
-        $branchId = ($user instanceof User && $user->hasRole(UserRole::Branch->value)) ? $user->branch_id : null;
+        $branchId = ($user instanceof User && $user->isBranchLike()) ? $user->branch_id : null;
+
+        $stockSubQuery = StockBalance::query()
+            ->selectRaw('item_id, SUM(qty_on_hand) as qty_on_hand_total')
+            ->when($branchId, fn (Builder $query) => $query->where('branch_id', $branchId))
+            ->groupBy('item_id');
 
         return $table
             ->query(fn (): Builder => Item::query()
-                ->withSum([
-                    'stockBalances as qty_on_hand_total' => fn (Builder $query) => $query
-                        ->when($branchId, fn (Builder $balanceQuery) => $balanceQuery->where('branch_id', $branchId)),
-                ], 'qty_on_hand')
+                ->leftJoinSub($stockSubQuery, 'item_stocks', fn ($join) => $join->on('items.id', '=', 'item_stocks.item_id'))
+                ->select('items.*')
+                ->selectRaw('COALESCE(item_stocks.qty_on_hand_total, 0) as qty_on_hand_total')
                 ->where('minimum_stock', '>', 0)
                 ->orderBy('qty_on_hand_total'))
             ->columns([

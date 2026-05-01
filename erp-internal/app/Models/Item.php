@@ -58,4 +58,14 @@ class Item extends Model
     {
         return $this->hasMany(StockBalance::class);
     }
+
+    public function branchSaleItems(): HasMany
+    {
+        return $this->hasMany(BranchSaleItem::class);
+    }
+
+    public function branchRequestItems(): HasMany
+    {
+        return $this->hasMany(BranchRequestItem::class, 'product_id');
+    }
 }

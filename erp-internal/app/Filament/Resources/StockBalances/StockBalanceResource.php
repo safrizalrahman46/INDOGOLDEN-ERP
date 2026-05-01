@@ -65,7 +65,7 @@ class StockBalanceResource extends Resource
             return $query;
         }
 
-        if ($user->hasRole(UserRole::Branch->value) && $user->branch_id) {
+        if ($user->isBranchLike() && $user->branch_id) {
             return $query->where('branch_id', $user->branch_id);
         }
 

@@ -27,39 +27,66 @@ class RoleAndUserSeeder extends Seeder
         $users = [
             [
                 'name' => 'ERP Owner',
+                'username' => 'owner',
                 'email' => 'owner@erp.local',
-                'role' => UserRole::Owner,
+                'roles' => [UserRole::Owner, UserRole::Admin],
                 'branch_id' => $hq?->id,
             ],
             [
                 'name' => 'ERP Finance',
+                'username' => 'finance',
                 'email' => 'finance@erp.local',
-                'role' => UserRole::Finance,
+                'roles' => [UserRole::Finance],
                 'branch_id' => $hq?->id,
             ],
             [
                 'name' => 'Head Logistics',
+                'username' => 'headlogistik',
                 'email' => 'headlogistik@erp.local',
-                'role' => UserRole::HeadLogistics,
+                'roles' => [UserRole::HeadLogistics, UserRole::Gudang],
                 'branch_id' => $hq?->id,
             ],
             [
                 'name' => 'Admin Logistics',
+                'username' => 'adminlogistik',
                 'email' => 'adminlogistik@erp.local',
-                'role' => UserRole::LogisticsAdmin,
+                'roles' => [UserRole::LogisticsAdmin, UserRole::Gudang],
                 'branch_id' => $hq?->id,
             ],
             [
                 'name' => 'Cabang Jakarta',
+                'username' => 'cabang.jakarta',
                 'email' => 'cabang.jakarta@erp.local',
-                'role' => UserRole::Branch,
+                'roles' => [UserRole::Branch, UserRole::Cabang],
                 'branch_id' => $jkt?->id,
             ],
             [
                 'name' => 'Cabang Bekasi',
+                'username' => 'cabang.bekasi',
                 'email' => 'cabang.bekasi@erp.local',
-                'role' => UserRole::Branch,
+                'roles' => [UserRole::Branch, UserRole::Cabang],
                 'branch_id' => $bks?->id,
+            ],
+            [
+                'name' => 'ERP Admin',
+                'username' => 'admin',
+                'email' => 'admin@erp.local',
+                'roles' => [UserRole::Admin, UserRole::Owner],
+                'branch_id' => $hq?->id,
+            ],
+            [
+                'name' => 'ERP Gudang',
+                'username' => 'gudang',
+                'email' => 'gudang@erp.local',
+                'roles' => [UserRole::Gudang, UserRole::LogisticsAdmin],
+                'branch_id' => $hq?->id,
+            ],
+            [
+                'name' => 'ERP Cabang General',
+                'username' => 'cabang',
+                'email' => 'cabang@erp.local',
+                'roles' => [UserRole::Cabang, UserRole::Branch],
+                'branch_id' => $jkt?->id,
             ],
         ];
 
@@ -68,6 +95,7 @@ class RoleAndUserSeeder extends Seeder
                 ['email' => $entry['email']],
                 [
                     'name' => $entry['name'],
+                    'username' => $entry['username'],
                     'branch_id' => $entry['branch_id'],
                     'phone' => '08'.random_int(1000000000, 9999999999),
                     'is_active' => true,
@@ -76,7 +104,11 @@ class RoleAndUserSeeder extends Seeder
                 ],
             );
 
-            $user->syncRoles([$entry['role']->value]);
+            $roles = collect($entry['roles'])
+                ->map(fn (UserRole $role): string => $role->value)
+                ->all();
+
+            $user->syncRoles($roles);
         }
     }
 }

@@ -72,7 +72,7 @@ class BranchResource extends Resource
             return $query;
         }
 
-        if ($user->hasRole(UserRole::Branch->value) && $user->branch_id) {
+        if ($user->isBranchLike() && $user->branch_id) {
             return $query->whereKey($user->branch_id);
         }
 

@@ -33,4 +33,19 @@ class Branch extends Model
     {
         return $this->hasMany(User::class);
     }
+
+    public function sales(): HasMany
+    {
+        return $this->hasMany(BranchSale::class);
+    }
+
+    public function requests(): HasMany
+    {
+        return $this->hasMany(BranchRequest::class);
+    }
+
+    public function shipmentBatchItems(): HasMany
+    {
+        return $this->hasMany(ShipmentBatchItem::class);
+    }
 }

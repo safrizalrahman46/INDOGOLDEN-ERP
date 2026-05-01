@@ -21,12 +21,27 @@ body,
 .fi-body,
 .fi-layout {
     font-family: 'Manrope', sans-serif;
+}
+
+html:not(.dark) body,
+html:not(.dark) .fi-body,
+html:not(.dark) .fi-layout {
     background: linear-gradient(180deg, #ffffff 0%, #fff9f9 100%);
 }
 
-.fi-sidebar {
+html.dark body,
+html.dark .fi-body,
+html.dark .fi-layout {
+    background: linear-gradient(180deg, #0b0f19 0%, #111827 100%);
+}
+
+html:not(.dark) .fi-sidebar {
     background: #fff;
     border-right: 1px solid #ffe1e1;
+}
+
+.fi-sidebar {
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .fi-sidebar-item-button {
@@ -41,9 +56,29 @@ body,
     font-weight: 700;
 }
 
-.fi-topbar {
+html.dark .fi-sidebar-item-active .fi-sidebar-item-button {
+    border-left: 3px solid var(--ig-red-500);
+    background: rgba(240, 61, 61, 0.18);
+    color: #fecaca;
+}
+
+html:not(.dark) .fi-topbar {
     background: #fff;
     border-bottom: 1px solid #ffe5e5;
+}
+
+.fi-topbar {
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+html.dark .fi-sidebar {
+    background: #0f172a;
+    border-right: 1px solid #1f2937;
+}
+
+html.dark .fi-topbar {
+    background: #111827;
+    border-bottom: 1px solid #1f2937;
 }
 
 .fi-section,
@@ -53,8 +88,26 @@ body,
 .fi-widget,
 .fi-in-entry-wrp {
     border-radius: 0.875rem;
+}
+
+html:not(.dark) .fi-section,
+html:not(.dark) .fi-ta,
+html:not(.dark) .fi-fo-field-wrp,
+html:not(.dark) .fi-wi-stats-overview-stat,
+html:not(.dark) .fi-widget,
+html:not(.dark) .fi-in-entry-wrp {
     box-shadow: 0 8px 30px rgba(166, 18, 18, 0.06);
     border: 1px solid #ffe8e8;
+}
+
+html.dark .fi-section,
+html.dark .fi-ta,
+html.dark .fi-fo-field-wrp,
+html.dark .fi-wi-stats-overview-stat,
+html.dark .fi-widget,
+html.dark .fi-in-entry-wrp {
+    box-shadow: 0 8px 30px rgba(2, 6, 23, 0.4);
+    border: 1px solid #1f2937;
 }
 
 .fi-btn-color-primary {

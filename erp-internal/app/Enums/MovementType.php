@@ -11,6 +11,7 @@ enum MovementType: string
     case WarehouseTransfer = 'warehouse_transfer';
     case BranchTransfer = 'branch_transfer';
     case BranchReceive = 'branch_receive';
+    case BranchSale = 'branch_sale';
     case StockAdjustment = 'stock_adjustment';
     case WasteShrinkage = 'waste_shrinkage';
     case StockOpname = 'stock_opname';
@@ -28,6 +29,7 @@ enum MovementType: string
             self::WarehouseTransfer->value => 'Warehouse Transfer',
             self::BranchTransfer->value => 'Branch Transfer',
             self::BranchReceive->value => 'Branch Receive',
+            self::BranchSale->value => 'Branch Sale',
             self::StockAdjustment->value => 'Stock Adjustment',
             self::WasteShrinkage->value => 'Waste / Shrinkage',
             self::StockOpname->value => 'Stock Opname',

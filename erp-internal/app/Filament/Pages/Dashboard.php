@@ -30,7 +30,7 @@ class Dashboard extends BaseDashboard
             ];
         }
 
-        if ($user->hasRole(UserRole::Branch->value)) {
+        if ($user->isBranchLike()) {
             return [
                 KpiOverview::class,
                 InventoryMovementChart::class,
@@ -44,7 +44,7 @@ class Dashboard extends BaseDashboard
             LowStockItemsTable::class,
         ];
 
-        if ($user->hasAnyRole([UserRole::Owner->value, UserRole::HeadLogistics->value])) {
+        if ($user->isAdminLike() || $user->hasAnyRole([UserRole::HeadLogistics->value, UserRole::Gudang->value])) {
             return [
                 PendingApprovalsOverview::class,
                 ...$widgets,

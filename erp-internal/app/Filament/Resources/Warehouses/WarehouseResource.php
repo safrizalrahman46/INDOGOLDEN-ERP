@@ -69,7 +69,7 @@ class WarehouseResource extends Resource
             return $query;
         }
 
-        if ($user->hasRole(UserRole::Branch->value) && $user->branch_id) {
+        if ($user->isBranchLike() && $user->branch_id) {
             return $query->where(function (Builder $warehouseQuery) use ($user) {
                 $warehouseQuery
                     ->whereNull('branch_id')

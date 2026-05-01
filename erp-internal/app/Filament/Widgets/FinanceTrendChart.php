@@ -15,7 +15,7 @@ class FinanceTrendChart extends ChartWidget
 {
     protected ?string $heading = 'Pemasukan vs Pengeluaran (7 Hari)';
 
-    protected static bool $isLazy = false;
+    protected static bool $isLazy = true;
 
     public static function canView(): bool
     {
@@ -31,7 +31,26 @@ class FinanceTrendChart extends ChartWidget
     protected function getData(): array
     {
         $user = Auth::user();
-        $branchId = ($user instanceof User && $user->hasRole(UserRole::Branch->value)) ? $user->branch_id : null;
+        $branchId = ($user instanceof User && $user->isBranchLike()) ? $user->branch_id : null;
+
+        $startDate = Carbon::today()->subDays(6)->toDateString();
+        $endDate = Carbon::today()->toDateString();
+
+        $incomeByDate = FinanceIncome::query()
+            ->selectRaw('transaction_date::date as trx_date, SUM(amount) as total_amount')
+            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->when($branchId, fn (Builder $query) => $query->where('branch_id', $branchId))
+            ->groupByRaw('transaction_date::date')
+            ->get()
+            ->mapWithKeys(fn (FinanceIncome $income): array => [(string) $income->trx_date => (float) $income->total_amount]);
+
+        $expenseByDate = FinanceExpense::query()
+            ->selectRaw('transaction_date::date as trx_date, SUM(amount) as total_amount')
+            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->when($branchId, fn (Builder $query) => $query->where('branch_id', $branchId))
+            ->groupByRaw('transaction_date::date')
+            ->get()
+            ->mapWithKeys(fn (FinanceExpense $expense): array => [(string) $expense->trx_date => (float) $expense->total_amount]);
 
         $labels = [];
         $incomes = [];
@@ -39,16 +58,11 @@ class FinanceTrendChart extends ChartWidget
 
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::today()->subDays($i);
-            $labels[] = $date->format('d M');
-            $incomes[] = (float) FinanceIncome::query()
-                ->whereDate('transaction_date', $date)
-                ->when($branchId, fn (Builder $query) => $query->where('branch_id', $branchId))
-                ->sum('amount');
+            $dateKey = $date->toDateString();
 
-            $expenses[] = (float) FinanceExpense::query()
-                ->whereDate('transaction_date', $date)
-                ->when($branchId, fn (Builder $query) => $query->where('branch_id', $branchId))
-                ->sum('amount');
+            $labels[] = $date->format('d M');
+            $incomes[] = (float) ($incomeByDate[$dateKey] ?? 0);
+            $expenses[] = (float) ($expenseByDate[$dateKey] ?? 0);
         }
 
         return [

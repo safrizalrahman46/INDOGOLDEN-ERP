@@ -31,6 +31,7 @@ class User extends Authenticatable implements FilamentUser
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
         'branch_id',
         'phone',
@@ -67,6 +68,31 @@ class User extends Authenticatable implements FilamentUser
         return $this->is_active && $this->hasAnyRole(UserRole::values());
     }
 
+    public function isAdminLike(): bool
+    {
+        return $this->hasAnyRole([
+            UserRole::Admin->value,
+            UserRole::Owner->value,
+        ]);
+    }
+
+    public function isWarehouseLike(): bool
+    {
+        return $this->hasAnyRole([
+            UserRole::Gudang->value,
+            UserRole::HeadLogistics->value,
+            UserRole::LogisticsAdmin->value,
+        ]);
+    }
+
+    public function isBranchLike(): bool
+    {
+        return $this->hasAnyRole([
+            UserRole::Cabang->value,
+            UserRole::Branch->value,
+        ]);
+    }
+
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
@@ -77,13 +103,33 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(StockMovement::class, 'created_by');
     }
 
+    public function createdSales(): HasMany
+    {
+        return $this->hasMany(BranchSale::class, 'created_by');
+    }
+
+    public function createdBranchRequests(): HasMany
+    {
+        return $this->hasMany(BranchRequest::class, 'created_by');
+    }
+
+    public function importLogs(): HasMany
+    {
+        return $this->hasMany(ImportLog::class, 'imported_by');
+    }
+
+    public function hppCalculations(): HasMany
+    {
+        return $this->hasMany(HppCalculation::class, 'created_by');
+    }
+
     public function scopeByRoleAndBranch(Builder $query, User $authUser): Builder
     {
-        if ($authUser->hasRole(UserRole::Owner->value) || $authUser->hasRole(UserRole::HeadLogistics->value)) {
+        if ($authUser->isAdminLike() || $authUser->hasRole(UserRole::HeadLogistics->value)) {
             return $query;
         }
 
-        if ($authUser->hasRole(UserRole::Branch->value) && $authUser->branch_id !== null) {
+        if ($authUser->isBranchLike() && $authUser->branch_id !== null) {
             return $query->where('branch_id', $authUser->branch_id);
         }
 

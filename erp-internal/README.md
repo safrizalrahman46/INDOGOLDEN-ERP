@@ -16,7 +16,10 @@ ERP internal berbasis Laravel + Filament untuk alur logistik, produksi, transfer
 - Inventory ledger: stock movement, stock balance, stock batch
 - Produksi: production order (consumption + output movement)
 - Transfer: antar gudang / cabang (submit -> approve -> ship -> receive)
+- Branch sales: input nota cabang cepat + posting + print thermal/A4
 - Finance: pemasukan, pengeluaran, kategori finance
+- Branch daily stock report: carry-over saldo harian (`stok_awal + masuk - keluar = sisa`)
+- Import/export Excel: tersedia di seluruh list resource (dengan pembatasan role)
 - Audit: activity log
 - Access control: role + policy per modul
 
@@ -50,6 +53,10 @@ Role yang tersedia:
 - `logistics_admin`
 - `branch`
 
+Panduan operasional per role (login sampai flow fitur):
+
+- `docs/OPERASIONAL_PER_ROLE.md`
+
 Dummy user hasil seeder (`password` untuk semua):
 
 - `owner@erp.local`
@@ -58,6 +65,17 @@ Dummy user hasil seeder (`password` untuk semua):
 - `adminlogistik@erp.local`
 - `cabang.jakarta@erp.local`
 - `cabang.bekasi@erp.local`
+
+Login panel mendukung `email` atau `username`.
+
+Username default seeder:
+
+- `owner`
+- `finance`
+- `headlogistik`
+- `adminlogistik`
+- `cabang.jakarta`
+- `cabang.bekasi`
 
 ## Struktur Data Utama
 
@@ -91,6 +109,11 @@ Dummy user hasil seeder (`password` untuk semua):
 
 - `transfers`
 - `transfer_items`
+
+### Branch Sales
+
+- `branch_sales`
+- `branch_sale_items`
 
 ### Finance & Audit
 
@@ -181,11 +204,16 @@ Resource yang sudah tersedia di panel admin:
 - Stock Movements
 - Production Orders
 - Transfers
+- Branch Sales
 - Finance Incomes
 - Finance Expenses
 - Stock Balances
 - Activity Logs
 - Users
+
+Page custom tambahan:
+
+- Branch Daily Stock Report
 
 ## Catatan Implementasi
 
@@ -194,10 +222,15 @@ Resource yang sudah tersedia di panel admin:
   - `StockMovementService` (draft/submit/approve/reject)
   - `ProductionService` (create + complete order)
   - `TransferService` (submit/approve/ship/receive)
+  - `BranchSaleService` (sync total, post nota, hitung COGS/gross profit, auto finance income)
+  - `BranchDailyStockReportService` (opening/in/out/closing harian per item cabang)
   - `FinanceSummaryService`
 - Policy per modul sudah diaktifkan berbasis role.
 - Query list resource dan dashboard widget sudah dibatasi per-role/per-branch (terutama untuk user `branch`).
 - Dashboard custom Filament tersedia dengan KPI + chart + pending approval + low stock + activity.
+- Posting nota cabang otomatis membuat `FinanceIncome` kategori `REV-SALES`.
+- Print nota tersedia untuk format thermal dan A4.
+- Import Excel untuk role `branch` dibatasi hanya untuk transaksi cabang (`BranchSale`, `StockMovement`, `Transfer`).
 
 ## Aksi Workflow di UI
 
@@ -206,8 +239,18 @@ Di halaman list dan edit untuk modul terkait, sudah tersedia action cepat sesuai
 - Stock Movement: `submit` -> `approve` / `reject`
 - Transfer: `submit` -> `approve` / `reject` -> `ship` -> `receive`
 - Production Order: `submit` -> `approve` -> `complete`
+- Branch Sale: `draft` -> `post` (stok keluar + jurnal income otomatis)
 
 Action dibatasi oleh policy role + status dokumen, dan menampilkan notifikasi sukses/gagal langsung di panel.
+
+## Branch Daily Stock Report
+
+Laporan stok cabang harian dihitung dari ledger movement approved, dengan rumus:
+
+- `stok_awal + masuk - keluar = sisa`
+- `sisa` hari ini menjadi `stok_awal` hari berikutnya (carry-over)
+
+Report dapat diakses dari menu admin dan dapat diexport ke XLSX.
 
 ## Validasi Cepat
 

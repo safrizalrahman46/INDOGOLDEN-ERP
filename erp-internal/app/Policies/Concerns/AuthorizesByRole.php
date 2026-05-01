@@ -17,11 +17,20 @@ trait AuthorizesByRole
 
     protected function isOwner(User $user): bool
     {
-        return $user->hasRole(UserRole::Owner->value);
+        return $user->hasAnyRole([UserRole::Owner->value, UserRole::Admin->value]);
     }
 
     protected function isBranch(User $user): bool
     {
-        return $user->hasRole(UserRole::Branch->value);
+        return $user->hasAnyRole([UserRole::Branch->value, UserRole::Cabang->value]);
+    }
+
+    protected function isGudang(User $user): bool
+    {
+        return $user->hasAnyRole([
+            UserRole::Gudang->value,
+            UserRole::HeadLogistics->value,
+            UserRole::LogisticsAdmin->value,
+        ]);
     }
 }

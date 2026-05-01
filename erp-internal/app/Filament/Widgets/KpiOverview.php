@@ -19,7 +19,7 @@ class KpiOverview extends StatsOverviewWidget
     protected function getStats(): array
     {
         $user = Auth::user();
-        $branchId = ($user instanceof User && $user->hasRole(UserRole::Branch->value)) ? $user->branch_id : null;
+        $branchId = ($user instanceof User && $user->isBranchLike()) ? $user->branch_id : null;
 
         $summary = app(FinanceSummaryService::class)->daily(branchId: $branchId);
 

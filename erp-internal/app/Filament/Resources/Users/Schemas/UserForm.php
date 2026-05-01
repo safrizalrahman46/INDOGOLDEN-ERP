@@ -14,6 +14,13 @@ class UserForm
         return $schema
             ->components([
                 TextInput::make('name')->required(),
+                TextInput::make('username')
+                    ->required()
+                    ->maxLength(50)
+                    ->unique(ignoreRecord: true)
+                    ->rule('regex:/^[a-z0-9._-]+$/')
+                    ->helperText('Gunakan huruf kecil, angka, titik, strip, atau underscore.')
+                    ->dehydrateStateUsing(fn (?string $state): string => strtolower(trim((string) $state))),
                 TextInput::make('email')->email()->required()->unique(ignoreRecord: true),
                 TextInput::make('phone'),
                 Select::make('branch_id')->relationship('branch', 'name')->searchable()->preload(),

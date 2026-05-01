@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             MasterDataSeeder::class,
             RoleAndUserSeeder::class,
             InventoryTransactionSeeder::class,
+            BranchSaleSeeder::class,
             ProductionSeeder::class,
             FinanceSeeder::class,
         ]);

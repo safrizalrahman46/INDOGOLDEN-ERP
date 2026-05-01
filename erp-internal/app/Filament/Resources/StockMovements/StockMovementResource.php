@@ -69,7 +69,7 @@ class StockMovementResource extends Resource
             return $query;
         }
 
-        if ($user->hasRole(UserRole::Branch->value) && $user->branch_id) {
+        if ($user->isBranchLike() && $user->branch_id) {
             return $query->where(function (Builder $q) use ($user) {
                 $q->where('from_branch_id', $user->branch_id)
                     ->orWhere('to_branch_id', $user->branch_id);
